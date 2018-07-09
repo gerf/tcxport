@@ -9,8 +9,8 @@ import xml.etree.ElementTree as ET
 from dateutil.parser import parse
 
 def main():
-  p = argparse.ArgumentParser(description='Export TCX files like a boss.')
-  # p.add_argument('-p', help='Output pattern per file.') # TODO: custom patterns?
+  p = argparse.ArgumentParser(description='Python utility to help runners log distance and time info stored in .tcx files.')
+  # p.add_argument('-p', help='Output pattern per file.') # TODO: custom patterns
   p.add_argument('files', nargs='*')
   args = p.parse_args()
 
@@ -19,7 +19,7 @@ def main():
 
 
 def parsefile(file):
-  # print 'Parsing {}...'.format(file) # TODO: output vs debug messages, etc.
+  print 'Parsing {}...'.format(file) # TODO: output vs debug messages, etc.
 
   tcx = ET.parse(file).getroot()
   ns = {'tcx': re.match('\{(.*)\}', tcx.tag).group(1)}
@@ -27,7 +27,14 @@ def parsefile(file):
   start = parse(tcx.find('./tcx:Activities/tcx:Activity/tcx:Lap', ns).attrib['StartTime'])
 
   # Start tracking metadata about the run
-  run = dict()
+  run = dict() # TODO: initialize more gracefully
+  run['dist'] = 0
+  run['min'] = 0
+  run['sec'] = 0
+  run['extdist'] = 0
+  run['extmin'] = 0
+  run['extsec'] = 0
+  run['extdist'] = 0
   run['start'] = start.strftime('%Y-%m-%d')
 
   # Distance checkpoints to track, in miles (use 999 for the end)
@@ -46,7 +53,7 @@ def parsefile(file):
   else:
     run['timeofday'] = 'Noon'
 
-  # TODO: what happens with distance=0 nodes
+  # TODO: what happens with distance=0 nodes?
 
   for tp in tcx.findall('./tcx:Activities/tcx:Activity/tcx:Lap/tcx:Track/tcx:Trackpoint', ns):
 
@@ -57,7 +64,7 @@ def parsefile(file):
     checkmark(d / 1000, t, start, run, 'ext')
 
   print '{}\t{}\t{}\t{}\t{}\t{}\t{}'.format(run['start'], run['dist'], run['min'], run['sec'], run['extdist'], run['extmin'], run['extsec'])
-
+  # TODO: skip if not even the first checkpoint is reached?
 
 def checkmark(dist, time, start, run, col):
 
