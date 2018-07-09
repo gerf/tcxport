@@ -38,10 +38,11 @@ def parsefile(file):
   run['start'] = start.strftime('%Y-%m-%d')
 
   # Distance checkpoints to track, in miles (use 999 for the end)
+  # TODO: interpolate these more sanely; perhaps non-integer miles can be passed in as an argument
   run['dists'] = collections.deque([3.1, 6.2, 999])
 
   # Extended distance checkpoints to track, in miles
-  run['extdists'] = collections.deque([3.1, 4, 5, 6, 6.2, 7, 8, 9, 10, 11, 12, 13, 13.1, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26.2, 27, 999])
+  run['extdists'] = collections.deque([3.1, 4, 5, 6, 6.2, 7, 8, 9, 10, 11, 12, 13, 13.1, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 26.2, 27, 999])
 
   run['inout'] = 'O' # Assume all these runs are outdoors
 
