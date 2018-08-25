@@ -24,18 +24,23 @@ def parsefile(file):
   tcx = ET.parse(file).getroot()
   ns = {'tcx': re.match('\{(.*)\}', tcx.tag).group(1)}
 
+  # Start time
+  # FIXME: some files don't have a starttime (no data), these should be skipped
   start = parse(tcx.find('./tcx:Activities/tcx:Activity/tcx:Lap', ns).attrib['StartTime'])
 
-  # Start tracking metadata about the run
+  # For tracking idles
+  lasttime = start
+  idletime = start - lasttime
+
+  # Metadata about the run
   run = dict() # TODO: initialize more gracefully
-  run['dist'] = 0
-  run['min'] = 0
-  run['sec'] = 0
-  run['extdist'] = 0
-  run['extmin'] = 0
-  run['extsec'] = 0
-  run['extdist'] = 0
-  run['start'] = start.strftime('%Y-%m-%d')
+  run['dist'] = 0 # initial distance
+  run['min'] = 0 # initial minutes
+  run['sec'] = 0 # seconds
+  run['extdist'] = 0 # extended distance
+  run['extmin'] = 0 # extended minutes
+  run['extsec'] = 0 # seconds
+  run['start'] = start.strftime('%Y-%m-%d') # start time
 
   # Distance checkpoints to track, in miles (use 999 for the end)
   # TODO: interpolate these more sanely; perhaps non-integer miles can be passed in as an argument
@@ -54,31 +59,35 @@ def parsefile(file):
   else:
     run['timeofday'] = 'Noon'
 
-  # TODO: what happens with distance=0 nodes?
 
   for tp in tcx.findall('./tcx:Activities/tcx:Activity/tcx:Lap/tcx:Track/tcx:Trackpoint', ns):
-
     t = parse(tp.find('tcx:Time', ns).text)
     d = float(tp.find('tcx:DistanceMeters', ns).text)
 
-    checkmark(d / 1000, t, start, run, '')
-    checkmark(d / 1000, t, start, run, 'ext')
+    if d == 0:
+      # We're idling at the moment
+      #print 'Idling: idletime={}\tlasttime={}\tt={}'.format(idletime, lasttime, t)
+      idletime += t - lasttime
+
+    else:
+      # We're making progress, so check to see if we've hit any distance marks
+      runsec = int((t - start - idletime).total_seconds())
+      checkmark(d / 1000, runsec, run, '')
+      checkmark(d / 1000, runsec, run, 'ext')
+
+    lasttime = t
 
   print '{}\t{}\t{}\t{}\t{}\t{}\t{}'.format(run['start'], run['dist'], run['min'], run['sec'], run['extdist'], run['extmin'], run['extsec'])
   # TODO: skip if not even the first checkpoint is reached?
 
-def checkmark(dist, time, start, run, col):
+def checkmark(dist, runsec, run, col):
 
     # Check against dist/extdist marks
     if dist * 0.621371 >= run[col+'dists'][0]:
-
       # We hit the next distance mark
       # TODO: interpolation if we're not exact?
-
-      ts = int((time - start).total_seconds())
-
-      m = int(math.floor(ts / 60))
-      s = ts % 60
+      m = int(math.floor(runsec / 60))
+      s = runsec % 60
       run[col+'min'] = m
       run[col+'sec'] = s
       run[col+'dist'] = run[col+'dists'].popleft()
