@@ -10,6 +10,7 @@ from dateutil.parser import parse
 
 def main():
   p = argparse.ArgumentParser(description='Python utility to help runners log distance and time info stored in .tcx files.')
+  # p.add_argument('-v', help='Verbose output.')
   # p.add_argument('-p', help='Output pattern per file.') # TODO: custom patterns
   p.add_argument('files', nargs='*')
   args = p.parse_args()
@@ -19,7 +20,7 @@ def main():
 
 
 def parsefile(file):
-  print 'Parsing {}...'.format(file) # TODO: output vs debug messages, etc.
+  # print 'Parsing {}...'.format(file) # TODO: output vs debug messages, etc.
 
   tcx = ET.parse(file).getroot()
   ns = {'tcx': re.match('\{(.*)\}', tcx.tag).group(1)}
@@ -59,14 +60,12 @@ def parsefile(file):
   else:
     run['timeofday'] = 'Noon'
 
-
   for tp in tcx.findall('./tcx:Activities/tcx:Activity/tcx:Lap/tcx:Track/tcx:Trackpoint', ns):
     t = parse(tp.find('tcx:Time', ns).text)
     d = float(tp.find('tcx:DistanceMeters', ns).text)
 
     if d == 0:
       # We're idling at the moment
-      #print 'Idling: idletime={}\tlasttime={}\tt={}'.format(idletime, lasttime, t)
       idletime += t - lasttime
 
     else:
@@ -77,7 +76,7 @@ def parsefile(file):
 
     lasttime = t
 
-  print '{}\t{}\t{}\t{}\t{}\t{}\t{}'.format(run['start'], run['dist'], run['min'], run['sec'], run['extdist'], run['extmin'], run['extsec'])
+  print '{start}\t{dist}\t{min}\t{sec}\t{extdist}\t{extmin}\t{extsec}\t{timeofday}\t{file}'.format(start=run['start'], dist=run['dist'], min=run['min'], sec=run['sec'], extdist=run['extdist'], extmin=run['extmin'], extsec=run['extsec'], timeofday=run['timeofday'], file=file)
   # TODO: skip if not even the first checkpoint is reached?
 
 def checkmark(dist, runsec, run, col):
